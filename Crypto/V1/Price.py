@@ -5,17 +5,19 @@ base_dir = abspath(join(dirname(__file__), "./"))
 path.append(base_dir)
 
 from websockets import connect
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
+import ast
 from json import loads
 from telegram import send
 from config import PROJECT_NAME, MARKET_DATA_URL
+from asyncio import run
 
 em = f"\nProject: {PROJECT_NAME}\nFile: Price.py"
-symbols = []
 
 async def on_message(ws, message):
     try:
         data = loads(message)
+        data= data['data']
         trade_price = None
         if ws.exchange == 'BINANCE':
             if 'e' in data.keys() and data['e'] in ['markPriceUpdate', 'trade']:
@@ -32,7 +34,7 @@ async def on_error(ws, error):
 
 async def on_close(ws, close_status_code, close_msg):
     await send(f"WEBSOCKET CLOSED!{em}\nExchange: {ws.exchange}\nExchange_Type: {ws.exchange_type}\nStatus Code: {close_status_code}\nMessage: {close_msg}")
-    await create_websocket(ws.exchange, ws.exchange_type)
+    await main(ws.exchange, ws.exchange_type, ws.symbols)
 
 async def on_open(ws):
     try:
@@ -41,17 +43,18 @@ async def on_open(ws):
         exc_type, exc_obj, exc_tb = exc_info()
         await send(f"ERROR!{em}\nExchange: {ws.exchange}\nType: {ws.exchange_type}\nFunction: on_open\nType: {exc_type.__name__}\nLine: {exc_tb.tb_lineno}\nError: {err}")
 
-async def create_websocket(exchange, exchange_type):
+async def main(exchange, exchange_type, symbols):
     try:
         stream_method = MARKET_DATA_URL[exchange][exchange_type]['METHOD']
-        url = MARKET_DATA_URL[exchange][exchange_type['URL']]
-        params = [f"{symbol['Symbol'].lower()}{stream_method}" for symbol in symbols]
+        url = MARKET_DATA_URL[exchange][exchange_type]['URL']
+        params = [f"{symbol.lower()}{stream_method}" for symbol in symbols]
         streams = '/'.join(params)
-        url = f"{url}/{streams}"
+        url = f"{url}{streams}"
         async with connect(url) as ws:
             ws.exchange = exchange
             ws.exchange_type = exchange_type
             ws.params = params
+            ws.symbols = symbols
             await on_open(ws)
             try:
                 async for message in ws:
@@ -59,13 +62,6 @@ async def create_websocket(exchange, exchange_type):
             except Exception as error:
                 await on_error(ws, error)
             await on_close(ws, ws.close_code, ws.close_reason)
-    except Exception as err:
-        exc_type, exc_obj, exc_tb = exc_info()
-        await send(f"ERROR!\n{em}\nExchange: {exchange}\nType: {exchange_type}\nFunction: create_websocket\nType: {exc_type.__name__}\nLine: {exc_tb.tb_lineno}\nError: {err}")
-
-async def main(exchange, exchange_type):
-    try:
-        await create_websocket(exchange, exchange_type)
     except KeyboardInterrupt:
         await send(f"PRICE FETCH HAS STOPPED!", False)
     except Exception as err:
@@ -76,7 +72,8 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Run the timeframe processing script.")
     parser.add_argument("--exchange", type=str, required=True, help="Exchange name (e.g., BINANCE, KUCOIN).")
     parser.add_argument("--exchange_type", type=str, required=True, help="Exchange type (e.g., SPOT, FUTURES).")
-    
+    parser.add_argument("--symbols", type=str, nargs='+', required=True, help='e.g., "[\'BTCUSDC\', \'BNBUSDC\']"')
+
     args = parser.parse_args()
-    main(args.exchange, args.exchange_type)
+    run(main(args.exchange, args.exchange_type, args.symbols))
 

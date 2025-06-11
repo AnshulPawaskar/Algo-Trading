@@ -5,22 +5,22 @@ MONGODB_URL = 'mongodb://mongodb10:56cdxPPmM9SM9Lswacdf@mongodb10.odecents.com:2
 DATABASE_NAME = 'AlgoTrading'
 
 #Telegram Credentials
-TELEGRAM_API_TOKEN = '6139489053:AAGtZULsS1WqQhf7tplIMoy1asHt0mMONm0'
+TELEGRAM_API_TOKEN = '6785107783:AAH9ZTyjiJiK3d3IiX5ZXiLgR7ttWeGXLvE'
 TELEGRAM_API_BASE_URL = 'https://api.telegram.org/'
 TELEGRAM_API_URL = f'{TELEGRAM_API_BASE_URL}bot{TELEGRAM_API_TOKEN}/sendMessage'
 ALERT_GROUP_ID = '-4152124020'
-ERROR_GROUP_ID = ''
+ERROR_GROUP_ID = '-4911895242'
 
 #Market Data Websocket
 MARKET_DATA_URL = {
     'BINANCE': {
         "SPOT": {
-            "URL": "",
+            "URL": "wss://stream.binance.com:9443/ws/",
             "METHOD": ""
         },
         "UMFUTURES": {
-            "URL": "",
-            "METHOD": ""
+            "URL": "wss://fstream.binance.com/stream?streams=",
+            "METHOD": "@markPrice"
         }
     }
 }
