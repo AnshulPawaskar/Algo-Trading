@@ -1,8 +1,10 @@
 PROJECT_NAME = 'AlgoTrading(CRYPTO) - CEX'
 
-#MONGODB Credentials
-MONGODB_URL = 'mongodb://mongodb10:56cdxPPmM9SM9Lswacdf@mongodb10.odecents.com:27017,mongodb10-rep1.odecents.com:27017,mongodb10-rep2.odecents.com:27017/'
-DATABASE_NAME = 'AlgoTrading'
+#Redis Credentials
+REDIS_PASSWORD = 'GuwoVlGp6I4Mv6zchofyF7fir1lFnlVR'
+REDIS_HOSTNAME = 'redis-14995.crce206.ap-south-1-1.ec2.redns.redis-cloud.com'
+REDIS_PORT = 14995
+REDIS_USERNAME = 'default'
 
 #Telegram Credentials
 TELEGRAM_API_TOKEN = '6785107783:AAH9ZTyjiJiK3d3IiX5ZXiLgR7ttWeGXLvE'

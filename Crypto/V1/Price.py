@@ -7,16 +7,18 @@ path.append(base_dir)
 from websockets import connect
 from argparse import ArgumentParser
 from json import loads
-from telegram import send
 from config import PROJECT_NAME, MARKET_DATA_URL
-from asyncio import run
+from asyncio import run, sleep
+from signal_generator import strategy1, send
+from redis_con import redis_connection
 
 em = f"\nProject: {PROJECT_NAME}\nFile: Price.py"
+message_processing = False
 
 async def on_message(ws, message):
     try:
         data = loads(message)
-        data= data['data']
+        data = data['data']
         trade_price = None
         if ws.exchange == 'BINANCE':
             if 'e' in data.keys() and data['e'] in ['markPriceUpdate', 'trade']:
@@ -24,6 +26,11 @@ async def on_message(ws, message):
                 symbol = data['s']
         if trade_price is not None:
             print(symbol, trade_price)
+            # r = ws.redis_connection
+            # var_data = await r.hgetall(f"Trade_Record-{ws.exchange}-{ws.exchange_type}-{symbol}")
+            # processing = var_data['Processing']
+            # if not processing:
+            #     order_type = await strategy1(ws.exchange, ws.exchange_type, symbol, trade_price, var_data)
     except Exception as err:
         exc_type, exc_obj, exc_tb = exc_info()
         await send(f"ERROR!{em}\nSymbol: {symbol}\nExchange: {ws.exchange}\nType: {ws.exchange_type}\nFunction: on_message\nType: {exc_type.__name__}\nLine: {exc_tb.tb_lineno}\nError: {err}")
@@ -44,20 +51,29 @@ async def on_open(ws):
 
 async def main(exchange, exchange_type, symbols):
     try:
+        global message_processing
         stream_method = MARKET_DATA_URL[exchange][exchange_type]['METHOD']
         url = MARKET_DATA_URL[exchange][exchange_type]['URL']
         params = [f"{symbol.lower()}{stream_method}" for symbol in symbols]
         streams = '/'.join(params)
         url = f"{url}{streams}"
+        r = await redis_connection()
         async with connect(url) as ws:
             ws.exchange = exchange
             ws.exchange_type = exchange_type
             ws.params = params
             ws.symbols = symbols
+            ws.redis_connection = r
             await on_open(ws)
             try:
                 async for message in ws:
-                    await on_message(ws, message)
+                    if not message_processing:
+                        message_processing = True
+                        try:
+                            await on_message(ws, message)
+                        finally:
+                            message_processing = False
+                    await sleep(60)
             except Exception as error:
                 await on_error(ws, error)
             await on_close(ws, ws.close_code, ws.close_reason)
@@ -65,6 +81,7 @@ async def main(exchange, exchange_type, symbols):
         await send(f"PRICE FETCH HAS STOPPED!", False)
     except Exception as err:
         exc_type, exc_obj, exc_tb = exc_info()
+        await r.close()
         await send(f"ERROR!{em}\nFunction: main\nType: {exc_type.__name__}\nLine: {exc_tb.tb_lineno}\nError: {err}")
 
 if __name__ == "__main__":
