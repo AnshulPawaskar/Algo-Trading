@@ -5,7 +5,7 @@ base_dir = abspath(join(dirname(__file__), "./"))
 path.append(base_dir)
 
 from websockets import connect
-from argparse import ArgumentParser, ArgumentTypeError
+from argparse import ArgumentParser
 import ast
 from json import loads
 from telegram import send
