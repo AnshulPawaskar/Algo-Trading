@@ -6,7 +6,6 @@ path.append(base_dir)
 
 from websockets import connect
 from argparse import ArgumentParser
-import ast
 from json import loads
 from telegram import send
 from config import PROJECT_NAME, MARKET_DATA_URL
@@ -33,12 +32,12 @@ async def on_error(ws, error):
     await send(f"WEBSOCKET ERROR OCCURRED!{em}\nExchange: {ws.exchange}\nType: {ws.exchange_type}\nError: {error}")
 
 async def on_close(ws, close_status_code, close_msg):
-    await send(f"WEBSOCKET CLOSED!{em}\nExchange: {ws.exchange}\nExchange_Type: {ws.exchange_type}\nStatus Code: {close_status_code}\nMessage: {close_msg}")
+    await send(f"WEBSOCKET CLOSED!{em}\nExchange: {ws.exchange}\nExchange_Type: {ws.exchange_type}\nStatus Code: {close_status_code}\nMessage: {close_msg}", False)
     await main(ws.exchange, ws.exchange_type, ws.symbols)
 
 async def on_open(ws):
     try:
-        await send(f"WEBSOCKET OPENED!\nExchange: {ws.exchange}\nExchange_Type: {ws.exchange_type}")
+        await send(f"WEBSOCKET OPENED!\nExchange: {ws.exchange}\nExchange_Type: {ws.exchange_type}", False)
     except Exception as err:
         exc_type, exc_obj, exc_tb = exc_info()
         await send(f"ERROR!{em}\nExchange: {ws.exchange}\nType: {ws.exchange_type}\nFunction: on_open\nType: {exc_type.__name__}\nLine: {exc_tb.tb_lineno}\nError: {err}")
